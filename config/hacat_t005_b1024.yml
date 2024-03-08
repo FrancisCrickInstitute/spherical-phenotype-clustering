@@ -1,0 +1,42 @@
+dataset:
+  csv_filepath: /nemo/project/proj-prosperity/MLAnalysis/nightil/paper-conf/tiled4x4__relative_clip__20230515_prosperity_jump_moa_hacat__filtered5cellpct.csv
+model:
+  encoder: ResNet18
+  embed_dim: 128
+  batch_norm:
+    track_running_stats: True
+    momentum: 1.0
+    affine: False
+train_conf:
+  optimizer:
+    type: Adam
+    lr: 0.0003
+    wd: 0.
+  batch_size: 1024
+  n_epochs: 100
+  temperature: 0.05
+  group_images_by: ['plate', 'well']
+  transforms:
+    - type: ToFloat32
+    - type: ToDevice
+    - type: im255center
+    - type: RandomResizedCrop
+      size: 128
+      scale: [0.8, 1.0]
+    - type: RandomHorizontalFlip
+    - type: GaussianBlur
+      kernel_size: 9
+      sigma: 5
+      p: 0.2
+eval_conf:
+  sampling_strategy:
+    type: plate
+    sample_size: 6240
+  transforms:
+    - type: ToFloat32
+    - type: ToDevice
+    - type: im255center
+  include_bbbc021_metrics: False
+  save_embeddings: True
+
+

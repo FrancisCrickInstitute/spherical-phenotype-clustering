@@ -1,0 +1,39 @@
+dataset:
+  csv_filepath: /nemo/project/proj-prosperity/MLAnalysis/nightil/paper-conf/BBBC021_trim_with_control__cropped96__relative_ando__icf_groupby_plate_fs200__cellfrac06.csv
+eval_dataset:
+  csv_filepath: /nemo/project/proj-prosperity/MLAnalysis/nightil/paper-conf/BBBC021_trim_with_control__cropped96__relative_ando__icf_groupby_plate_fs200__cellfrac04.csv
+model:
+  encoder: ResNet18
+  embed_dim: 384
+  batch_norm:
+    track_running_stats: True
+    momentum: 1.0
+    affine: False
+train_conf:
+  optimizer:
+    type: Adam
+    lr: 0.0003
+    wd: 0.
+  batch_size: 16
+  n_epochs: 100
+  temperature: 0.25
+  early_stopping_metric: nsc
+  group_images_by: ['compound_name', 'compound_uM']
+  transforms:
+    - type: ToDevice
+    - type: RandAugment
+      magnitude: 12
+    - type: ToFloat32
+    - type: im255center
+eval_conf:
+  sampling_strategy:
+    type: plate
+    sample_size: 100000
+  transforms:
+    - type: ToFloat32
+    - type: ToDevice
+    - type: im255center
+  include_bbbc021_metrics: True
+  save_embeddings: False
+
+
