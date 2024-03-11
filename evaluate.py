@@ -11,9 +11,7 @@ from umap import UMAP
 from model import Embedder
 from dataset import CompoundDataset
 from visualization import save_interactive_scatter_plot
-
-
-META_DF_COLUMNS = ['cell_type', 'plate', 'well', 'moa', 'treatment', 'compound_name', 'compound_uM']
+from dfconst import META_DF_COLUMNS, PLATE_COLUMN, WELL_COLUMN, TREATMENT_COLUMN, MOA_COLUMN, COMPOUND_NAME_COLUMN
 
 
 def knn1(embeddings: np.ndarray, df: pd.DataFrame, category: str) -> float:
@@ -93,7 +91,7 @@ def make_well_averages(embeddings: np.array, meta_df: pd.DataFrame) -> Tuple[np.
 
     print('Generating well level embeddings...')
     well_meta_df = pd.DataFrame(columns=META_DF_COLUMNS)
-    for i, (_, indices) in tqdm(enumerate(meta_df.groupby(['plate', 'well']).indices.items())):
+    for i, (_, indices) in tqdm(enumerate(meta_df.groupby([PLATE_COLUMN, WELL_COLUMN]).indices.items())):
         well_embedding = np.mean(embeddings[indices, :], axis=0)
         # indices[0] since these columns are the same across the well
         meta = meta_df.iloc[indices[0]]
@@ -113,7 +111,7 @@ def calculate_bbbc021_metrics(well_embeddings, well_meta_df) -> Tuple:
     # single treatment embeddings
     treatment_embeddings = []
     treatment_meta_df = pd.DataFrame(columns=META_DF_COLUMNS)
-    for i, (_, indices) in tqdm(enumerate(well_meta_df.groupby(['treatment']).indices.items())):
+    for i, (_, indices) in tqdm(enumerate(well_meta_df.groupby([TREATMENT_COLUMN]).indices.items())):
         treatment_embedding = np.median(well_embeddings[indices, :], axis=0)
         treatment_embeddings.append(treatment_embedding)
 
@@ -122,28 +120,28 @@ def calculate_bbbc021_metrics(well_embeddings, well_meta_df) -> Tuple:
     treatment_embeddings = np.array(treatment_embeddings)
 
     # BBBC021 - DMSO and unknown are not used in metric reporting
-    nsc_valid_samples = (treatment_meta_df['moa'] != 'unknown') & (treatment_meta_df['moa'] != 'DMSO')
+    nsc_valid_samples = (treatment_meta_df[MOA_COLUMN] != 'unknown') & (treatment_meta_df[MOA_COLUMN] != 'DMSO')
     treatment_embeddings = treatment_embeddings[nsc_valid_samples]
     treatment_meta_df = treatment_meta_df[nsc_valid_samples]
 
     nsc = not_same_compound_score(
         embeddings=treatment_embeddings,
-        compound_labels=treatment_meta_df['compound_name'].values,
-        moa_labels=treatment_meta_df['moa'].values,
+        compound_labels=treatment_meta_df[COMPOUND_NAME_COLUMN].values,
+        moa_labels=treatment_meta_df[MOA_COLUMN].values,
         metric='cosine',
     )
 
     # Kinase inhibitors and Cholesterol-lowering are only in one batch
-    nscb_valid_samples = (treatment_meta_df['moa'] != 'Kinase inhibitors') & (treatment_meta_df['moa'] != 'Cholesterol-lowering')
+    nscb_valid_samples = (treatment_meta_df[MOA_COLUMN] != 'Kinase inhibitors') & (treatment_meta_df[MOA_COLUMN] != 'Cholesterol-lowering')
     nscb_treatment_embeddings = treatment_embeddings[nscb_valid_samples]
     nscb_treatment_meta_df = treatment_meta_df[nscb_valid_samples]
 
     nscb = not_same_compound_batch_score(
         embeddings=nscb_treatment_embeddings,
-        compound_labels=nscb_treatment_meta_df['compound_name'].values,
-        moa_labels=nscb_treatment_meta_df['moa'].values,
+        compound_labels=nscb_treatment_meta_df[COMPOUND_NAME_COLUMN].values,
+        moa_labels=nscb_treatment_meta_df[MOA_COLUMN].values,
         # week
-        batch_labels=nscb_treatment_meta_df['plate'].astype(str).str.split('_').str[0].values,
+        batch_labels=nscb_treatment_meta_df[PLATE_COLUMN].astype(str).str.split('_').str[0].values,
         metric='cosine',
     )
 
@@ -165,9 +163,9 @@ def evaluate_model(
 
     metrics = {}
     # 1-NN to moa
-    metrics[f'{prefix}well-1nn-moa'] = knn1(well_embeddings, well_meta_df, 'moa')
+    metrics[f'{prefix}well-1nn-moa'] = knn1(well_embeddings, well_meta_df, MOA_COLUMN)
     # 1-NN to treatment
-    metrics[f'{prefix}well-1nn-treatment'] = knn1(well_embeddings, well_meta_df, 'treatment')
+    metrics[f'{prefix}well-1nn-treatment'] = knn1(well_embeddings, well_meta_df, TREATMENT_COLUMN)
 
     if include_bbbc021_metrics:
         nsc, nscb = calculate_bbbc021_metrics(well_embeddings, well_meta_df)
@@ -184,7 +182,7 @@ def evaluate_model(
             save_fpath=os.path.join(experiment_folder, f'{prefix}tsne.html'),
             embeddings2d=tsne12,
             meta_df=well_meta_df,
-            plot_label_type='moa',
+            plot_label_type=MOA_COLUMN,
             hover_label_types=META_DF_COLUMNS,
         )
 
@@ -192,7 +190,7 @@ def evaluate_model(
             save_fpath=os.path.join(experiment_folder, f'{prefix}umap.html'),
             embeddings2d=um12,
             meta_df=well_meta_df,
-            plot_label_type='moa',
+            plot_label_type=MOA_COLUMN,
             hover_label_types=META_DF_COLUMNS,
         )
 

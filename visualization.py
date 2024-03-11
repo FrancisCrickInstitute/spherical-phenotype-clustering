@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 
+from dfconst import CONTROL_MOA_NAME
+
 
 def save_interactive_scatter_plot(
         save_fpath: str,
@@ -25,7 +27,7 @@ def save_interactive_scatter_plot(
         x=x,
         y=y,
         color=meta_df[plot_label_type],
-        color_discrete_map={'DMSO': 'black'},
+        color_discrete_map={CONTROL_MOA_NAME: 'black'},
         color_discrete_sequence=px.colors.qualitative.Light24,
         title=f"{plot_label_type}.html",
         custom_data=custom_data,

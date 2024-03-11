@@ -9,6 +9,7 @@ from torch.utils.data.dataloader import default_collate
 from tqdm import tqdm
 
 from dataset import CompoundDataset, IndexFilteredDataset
+from dfconst import PLATE_COLUMN, MOA_COLUMN, CONTROL_MOA_NAME
 
 
 class Embedder(nn.Module):
@@ -56,16 +57,16 @@ def make_embeddings(
 ) -> np.ndarray:
     df = dataset.get_df()
     embeddings = np.zeros((len(df), model.embed_dim), dtype=np.float32)
-    for plate in df['plate'].unique():
+    for plate in df[PLATE_COLUMN].unique():
         plate_embeddings = []
-        plate_indices = df[df['plate'] == plate].index.tolist()
+        plate_indices = df[df[PLATE_COLUMN] == plate].index.tolist()
         dataset_filtered_by_plate = IndexFilteredDataset(dataset, plate_indices)
 
         if plate_sampling_strategy:
             # compute the batch norm layer statistics on controls for this plate
             plate_df = dataset_filtered_by_plate.get_df()
             controls = []
-            control_indices = plate_df[plate_df['moa'] == 'DMSO'].index
+            control_indices = plate_df[plate_df[MOA_COLUMN] == CONTROL_MOA_NAME].index
             for idx in control_indices:
                 controls.append(dataset_filtered_by_plate[idx])
 

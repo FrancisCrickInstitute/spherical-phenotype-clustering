@@ -5,6 +5,7 @@ import pandas as pd
 import tifffile as tiff
 import torch
 from torch.utils.data import Dataset as PyTorchDataset
+from dfconst import FILEPATH_COLUMN, TREATMENT_COLUMN, COMPOUND_NAME_COLUMN, COMPOUND_UM_COLUMN
 
 
 def load_image_from_df_cached(
@@ -13,7 +14,7 @@ def load_image_from_df_cached(
 ) -> Callable:
     """ Returns a function that loads an image from a dataframe, wrapped in an lru cache. """
     def f(index: int) -> torch.Tensor:
-        image_fpath = df['filepath'].iloc[index]
+        image_fpath = df[FILEPATH_COLUMN].iloc[index]
         im = tiff.imread(image_fpath)
         im = torch.tensor(im)
         return im
@@ -27,8 +28,8 @@ class CompoundDataset(PyTorchDataset):
             max_cache_size: Optional[int] = 0,
     ):
         df = pd.read_csv(csv_fpath)
-        if 'treatment' not in df.columns:
-            df['treatment'] = df['compound_name'].astype(str) + '_' + df['compound_uM'].astype(str)
+        if TREATMENT_COLUMN not in df.columns:
+            df[TREATMENT_COLUMN] = df[COMPOUND_NAME_COLUMN].astype(str) + '_' + df[COMPOUND_UM_COLUMN].astype(str)
         self.df = df
         self.load_im = load_image_from_df_cached(df=self.df, max_cache_size=max_cache_size)
 
