@@ -342,26 +342,27 @@ def main():
             tiles = generate_tiles(uint8_im, nuclei_th, tile_size=128)
 
             for tile_number, (tile, tile_dna_foreground_pct) in tiles.items():
-                # save the tile
-                tile_save_fpath = os.path.join(TILE_SAVE_FOLDER, f"{row['plate']}_{row['well']}_{row['field']}_{tile_number}.tiff")
-                tiff.imwrite(tile_save_fpath, tile)
+                if tile_dna_foreground_pct >= 5.:
+                    # save the tile
+                    tile_save_fpath = os.path.join(TILE_SAVE_FOLDER, f"{row['plate']}_{row['well']}_{row['field']}_{tile_number}.tiff")
+                    tiff.imwrite(tile_save_fpath, tile)
 
-                # add a new row to the output dataframe
-                out_tile_df = pd.concat([out_tile_df, pd.DataFrame({
-                    'plate': row['plate'],
-                    'filepath': tile_save_fpath,
-                    'compound_id': row['compound_id'],
-                    'compound_name': row['compound_name'],
-                    'compound_uM': row['compound_uM'],
-                    'moa': row['moa'],
-                    'well': row['well'],
-                    'replicate': row['replicate'],
-                    'field': row['field'],
-                    'cell_type': row['cell_type'],
-                    'cell_pct': tile_dna_foreground_pct,
-                    'tile': tile_number,
-                    'otsu_threshold': nuclei_th,
-                }, index=[0])], ignore_index=True)
+                    # add a new row to the output dataframe
+                    out_tile_df = pd.concat([out_tile_df, pd.DataFrame({
+                        'plate': row['plate'],
+                        'filepath': tile_save_fpath,
+                        'compound_id': row['compound_id'],
+                        'compound_name': row['compound_name'],
+                        'compound_uM': row['compound_uM'],
+                        'moa': row['moa'],
+                        'well': row['well'],
+                        'replicate': row['replicate'],
+                        'field': row['field'],
+                        'cell_type': row['cell_type'],
+                        'cell_pct': tile_dna_foreground_pct,
+                        'tile': tile_number,
+                        'otsu_threshold': nuclei_th,
+                    }, index=[0])], ignore_index=True)
 
     # save the dataframe
     out_tile_df.to_csv(OUT_TILED_CSV_FPATH, index=False)
