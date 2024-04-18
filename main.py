@@ -6,7 +6,7 @@ from typing import Optional
 import torch
 import yaml
 
-from dataset import CompoundDataset
+from dataset import CompoundDataset, CompoundTensorDataset
 from model import Embedder, make_embeddings, RandomTest
 from resnet import resnet18
 from train import train_model
@@ -39,10 +39,12 @@ def main(config_filepath: Optional[str] = None):
     with open(config_dest, 'w') as f:
         yaml.dump(config, f)
 
-    dataset = CompoundDataset(
+
+    tensor = torch.load(config['dataset']['tensor_filepath'])
+
+    dataset = CompoundTensorDataset(
         csv_fpath=config['dataset']['csv_filepath'],
-        # hold images in memory
-        max_cache_size=None,
+        tensor=tensor,
     )
 
     eval_dataset = None

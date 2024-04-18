@@ -43,8 +43,32 @@ class CompoundDataset(PyTorchDataset):
         return self.df
 
 
+class CompoundTensorDataset(PyTorchDataset):
+    def __init__(self, csv_fpath: str, tensor: torch.Tensor):
+        df = pd.read_csv(csv_fpath)
+        if TREATMENT_COLUMN not in df.columns:
+            df[TREATMENT_COLUMN] = df[COMPOUND_NAME_COLUMN].astype(str) + '_' + df[COMPOUND_UM_COLUMN].astype(str)
+        assert df.shape[0] == tensor.shape[0]
+        self.df = df
+        self.tensor = tensor
+
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, int]:
+        return self.tensor[index], index
+
+    def __len__(self) -> int:
+        return len(self.df)
+
+    def get_df(self) -> pd.DataFrame:
+        return self.df
+
+
+
 class IndexFilteredDataset(PyTorchDataset):
-    def __init__(self, source_dataset: CompoundDataset, retained_indices: List[int]):
+    def __init__(
+        self,
+        source_dataset: Union[CompoundDataset, CompoundTensorDataset],
+        retained_indices: List[int]
+    ):
         super().__init__()
         self.source_dataset = source_dataset
         self.retained_indices = retained_indices
